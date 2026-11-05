@@ -1,0 +1,151 @@
+# coding=utf-8
+from .transaction import TransactionError
+from .values import integer_types, resource_id
+
+ENERGY = "radium:energy"
+FLUID = "radium:fluid"
+
+
+class ProviderRegistry(object):
+    """Providers only expose already-loaded endpoints; no block entity creation."""
+    def __init__(self, manager, is_loaded, block_name):
+        self.manager = manager
+        self.is_loaded = is_loaded
+        self.block_name = block_name
+        self.providers = {}
+        self.generation = 0
+
+    def register(self, capability, block_id, provider):
+        self.manager.assert_idle()
+        if capability not in (ENERGY, FLUID):
+            raise ValueError("Unsupported capability")
+        resource_id(block_id)
+        if not callable(provider):
+            raise TypeError("Provider must be callable")
+        key = (capability, block_id)
+        previous = self.providers.get(key)
+        if previous is not None and previous != provider:
+            raise ValueError("A different provider is already registered for %r" % (key,))
+        self.providers[key] = provider
+
+    def unregister(self, capability, block_id, provider):
+        self.manager.assert_idle()
+        key = (capability, block_id)
+        if self.providers.get(key) == provider:
+            del self.providers[key]
+            self.invalidate()
+            return True
+        return False
+
+    def invalidate(self):
+        # Global generation is intentional: no strong-reference block cache.
+        self.manager.assert_thread()
+        self.generation += 1
+
+    def query(self, capability, dimension, pos, face=None):
+        self.manager.assert_thread()
+        if capability not in (ENERGY, FLUID):
+            raise ValueError("Unsupported capability")
+        pos = tuple(pos)
+        if (len(pos) != 3 or any(isinstance(v, bool) or not isinstance(v, integer_types)
+                                 for v in pos) or isinstance(dimension, bool)
+                or not isinstance(dimension, integer_types)):
+            raise ValueError("Use integer dimension and block coordinates")
+        if face is not None and (isinstance(face, bool) or
+                                 not isinstance(face, integer_types) or face not in range(6)):
+            raise ValueError("Face must be an absolute target face 0..5 or None")
+        if not self.is_loaded(dimension, pos):
+            return None
+        name = self.block_name(dimension, pos)
+        provider = self.providers.get((capability, name))
+        if provider is None:
+            return None
+        generation = self.generation
+        handler = provider(dimension, pos, face)
+        if handler is None:
+            return None
+        if handler.manager is not self.manager:
+            raise TransactionError("Provider returned an endpoint from a different service")
+
+        def valid():
+            return (self.generation == generation and
+                    self.providers.get((capability, name)) == provider and
+                    self.is_loaded(dimension, pos) and
+                    self.block_name(dimension, pos) == name)
+
+        cls = GuardedEnergy if capability == ENERGY else GuardedFluid
+        return cls(handler, valid)
+
+
+class GuardedHandler(object):
+    def __init__(self, handler, valid):
+        self.handler = handler
+        self.valid = valid
+
+    @property
+    def manager(self):
+        return self.handler.manager
+
+    @property
+    def storage_ids(self):
+        return self.handler.storage_ids
+
+    def check(self, tx=None):
+        self.manager.assert_thread()
+        if tx is not None:
+            tx.guard(self.valid)
+        elif not self.valid():
+            raise TransactionError("Stale capability handle; query it again")
+
+
+class GuardedEnergy(GuardedHandler):
+    def get_amount(self, tx=None):
+        self.check(tx)
+        return self.handler.get_amount(tx)
+
+    def get_capacity(self):
+        self.check()
+        return self.handler.get_capacity()
+
+    def insert(self, amount, tx):
+        self.check(tx)
+        return self.handler.insert(amount, tx)
+
+    def extract(self, amount, tx):
+        self.check(tx)
+        return self.handler.extract(amount, tx)
+
+
+class GuardedFluid(GuardedHandler):
+    def get_storage_ids(self, slots=None):
+        self.check()
+        method = getattr(self.handler, "get_storage_ids", None)
+        return method(slots) if method is not None else self.handler.storage_ids
+
+    def get_slots(self):
+        self.check()
+        return self.handler.get_slots()
+
+    def get_resource(self, slot, tx=None):
+        self.check(tx)
+        return self.handler.get_resource(slot, tx)
+
+    def get_amount(self, slot, tx=None):
+        self.check(tx)
+        return self.handler.get_amount(slot, tx)
+
+    def get_capacity(self, slot, fluid_id=None):
+        self.check()
+        return self.handler.get_capacity(slot, fluid_id)
+
+    def is_valid(self, slot, fluid_id):
+        self.check()
+        return self.handler.is_valid(slot, fluid_id)
+
+    def insert(self, fluid_id, amount, tx, slot=None):
+        self.check(tx)
+        return self.handler.insert(fluid_id, amount, tx, slot)
+
+    def extract(self, fluid_id, amount, tx, slot=None):
+        self.check(tx)
+        return self.handler.extract(fluid_id, amount, tx, slot)

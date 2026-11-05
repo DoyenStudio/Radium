@@ -1,0 +1,29 @@
+{
+    "format_version": 1,
+    "header": {
+        "name": "radium",
+        "description": "Optional transactional fluid and RF capability library",
+        "uuid": "c7bb34ea-3e97-48ac-a8ae-7202299a84ec",
+        "version": [
+            1,
+            1,
+            0
+        ],
+        "min_engine_version": [
+            1,
+            18,
+            0
+        ]
+    },
+    "modules": [
+        {
+            "type": "data",
+            "uuid": "1f805e27-4758-4d96-9a13-da2b1377f5c4",
+            "version": [
+                1,
+                1,
+                0
+            ]
+        }
+    ]
+}

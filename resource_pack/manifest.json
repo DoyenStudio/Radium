@@ -1,0 +1,29 @@
+{
+    "format_version": 1,
+    "header": {
+        "name": "radium Resources",
+        "description": "radium companion pack",
+        "uuid": "dd7f2af0-34d7-4df3-ad12-9bcae9e1f76e",
+        "version": [
+            1,
+            1,
+            0
+        ],
+        "min_engine_version": [
+            1,
+            18,
+            0
+        ]
+    },
+    "modules": [
+        {
+            "type": "resources",
+            "uuid": "df8061a2-0e45-4e76-8765-cab6b86f1605",
+            "version": [
+                1,
+                1,
+                0
+            ]
+        }
+    ]
+}
