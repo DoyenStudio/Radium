@@ -103,6 +103,8 @@ class FluidView(EndpointView):
 
     def get_slots(self):
         self._check()
+        # Recheck the delegate too: cached slot IDs do not prove it is alive.
+        self.handler.get_slots()
         return self.slots
 
     def _slot(self, slot):

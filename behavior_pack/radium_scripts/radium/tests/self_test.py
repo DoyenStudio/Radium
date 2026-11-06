@@ -758,7 +758,7 @@ def test_fluid_distribution_rolls_back_unrepresentable_target_sum():
     with api.open_transaction() as tx:
         # The representable total is 1; the huge second insertion is discarded.
         # Source cannot supply exactly 1, so the entire move must roll back.
-        expect(TransactionError, lambda: api.distribute_fluid(source, (tiny, big), huge, tx))
+        expect(TransactionError, lambda: api.distribute_fluid(source, (tiny, big), WATER, huge, tx))
         assert tiny.get_amount(0, tx) == big.get_amount(0, tx) == 0
         tx.commit()
     assert source.get_amount(0) == huge
