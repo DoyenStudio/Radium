@@ -1,54 +1,72 @@
 # 验证与验收
 
-日期：2026-10-31。版本：1.1.0。
+日期：2026-11-06。版本：1.3.0。测试解释器：当前游戏服务端 Python 2.7.13。
 
-## 当前实际完成
+## 已完成
 
-- 通过 minecraft_py 静态审查解析 radium 包内 17 个 Python 文件，0 个解析失败，无 warning/risk；3 条建议仅涉及既有形式的函数参数数量。不导入、执行或编译项目模块。
-- 解析两个 manifest JSON，确认 4 个 UUID 唯一，header/module 版本统一为 1.1.0；API_VERSION 与入口版本同步。
-- PowerShell 打包成功：103 个归档条目；核对新增 resource.py、自测及两个 manifest，无 Git/Studio 元数据或 Python 字节码缓存。工作区共 98 个 Python 文件，未在系统解释器运行任何项目代码。
-- 源码检查动态限额 guard、委托端点与共享身份、精确流体变化及累加、schema 1 恢复边界、schema 2 数量/属性编码。游戏内回归用例已加入，但尚未执行。
-- 尝试连接 MCDK 游戏服务端：localhost:19133 无法连接。游戏内测试未运行，下面的用例属于待执行验收，不能视为已通过。
-- SkyBlueTech 未接入、未迁移、未修改。现有工作区的用户改动保留。
+| 验证组 | 结果 | 覆盖范围 |
+| --- | --- | --- |
+| 隔离回归 | 166/166 | 原有70项；原生参与者25项、量化16项、锅11项、物品转换14项、面规则8项、假引擎后端22项 |
+| 真实普通容器 | 32/32 | 普通/陷阱箱、八种铜箱、木桶、全部潜影盒颜色及通用ID、漏斗、发射器、投掷器；全部槽位、覆盖/清空、1/16/64堆叠上限 |
+| 真实双箱 | 80/80 | 普通/陷阱/八种铜箱，四方向、两种放置顺序；全部54槽，两半相同槽序与身份 |
+| 真实加工容器、锅、物品数据 | 64/64 | 炉三类及燃烧变体6项、酿造台1项、水位组合49项、熔岩1项、物品数据7项 |
+| 真实失败与生命周期 | 8/8 | 写入实际发生后返回失败，普通箱、桶、铜双箱、炉、酿造台和锅恢复；外部原生改槽冲突；合箱/拆箱拒绝旧事务 |
+| SkyBlueTech 管道回调 | 29/29 | 普通容器、三类炉各面和空桶、酿造台各面、水/熔岩；跟踪确认调用radium搬运接口 |
+| SkyBlueTech 储罐互通 | 4/4 | 真实青铜储罐与锅，水/熔岩双向；原版端经过radium，储罐端用SBT机器逻辑 |
+| SkyBlueTech 双箱管网 | 2/2 | 普通/铜双箱两半各接同一U形管网，正反各3次回调，54槽不变，radium返回0 |
+| SkyBlueTech 自动调度 | 5/5 | 钢物品管、水300/500mB往返、熔岩300/500mB预算；实际OnSimTick每5tick驱动，未手调回调 |
+| 保存重进 | 12个方块快照一致 | 普通箱、打蜡铜双箱两半、水667mB、熔岩1000mB及支撑/雨棚；完整引擎重载前后NBT、库存快照、配对和状态一致 |
 
-## 游戏内自测
+真实容器检查合计176项，另有8项真实失败/生命周期检查；管道检查合计40项。独立测试空区为维度0 `x=-24..-17, y=99..102, z=10..16`，每次先核验已加载且为空气，结束清除测试物品、管网实例和方块，再核验恢复。没有改动玩家背包或已有机器。
 
-先导入/启用 radium，使用游戏内 Python 2.7.13 服务端控制台或 MCDK execute_code 执行：
+保存重进样本包含名称、附魔、剩余耐久和extraId的钻石剑；内含27槽、每槽64个石头的潜影盒物品；铜双箱54槽不同数量的物品；普通水与熔岩。物品数据组另验证userData和收纳袋自定义标记。**收纳袋标记往返不等于实际填充收纳袋的内容验收。**
+
+熔岩在原始300/500mB管网预算下正反均为0移动。只把测试网络实例的transfer_speed临时提高到1000，完成整桶往返后恢复。自动调度报告记录间隔5的SBT tick序号及radium调用；水的166/167mB档位差和500mB转移均守恒。
+
+## 引擎实测与修正
+
+- 普通容器和八种铜箱的GetContainerSize、GetContainerItem(getUserData=True)、SpawnItemToContainer可用，当前使用此后端。炉和酿造台的通用容量不可用，使用完整NBT快照，仅修改Items。
+- GetChestPairedPosition属于BlockInfo。方块朝向用GetBlockAuxValueFromStates获取，面编号不能直接作为aux。双箱以字典序最小坐标访问全54槽。
+- 双箱重进后按半箱调用SetBlockEntityData不能可靠定位库存。因此普通容器补偿也通过同一槽位API，逆序恢复并核验完整前像，无失败后切换NBT重试。该问题在保存验收清理阶段发现，随后已通过槽位API清理并复核设施。
+- 原生槽位写入会添加forceunpair记账字段；快照仅忽略该字段，实际配对单独复核。Block palette和附加字段不能无损转换时拒绝端口/操作。
+- 原生NBT写入可同步改变炉燃烧标志；同类型lit/unlit共享物理身份，熔炉、烟熏炉和高炉之间仍区分。
+- 原版漏斗跨真实tick对照：炉顶接受原料槽物品；侧面接受木板、煤块，拒绝绯红木板和空桶；底面可抽燃料槽空桶。酿造台侧面输入空瓶和烈焰粉、顶面输入原料；底面抽槽1～3药水，**不抽槽0的龙息残留玻璃瓶**。
+
+## 事务验证
+
+166项隔离回归保留原70项，覆盖模拟/嵌套放弃零写入、prepare顺序、原生写入回读、失败者参与逆序补偿、补偿失败隔离全部相关Cell/owner、日志回调失败不掩盖结果、提交重入拒绝、自身失效延迟、外部改库存、双箱共享/卸载/配对变化、量化多目标守恒与权限、普通端点错误语义及第三方物品身份保留。
+
+真实故障注入只包装独立测试服务的引擎代理，先调用实际setter，再令该次返回False。六类容器均抛普通TransactionError，完整前像恢复且无隔离记录。数量一致但NBT不同、第三状态冲突和补偿再次失败的隔离分支由假引擎/core测试覆盖，没有在玩家设施上制造不可恢复损坏。
+
+原生跨容器写入是同步补偿，不承诺引擎层绝对原子性。RecoveryError后禁止自动重放或解封，需依据诊断核对修复后重载。
+
+## 复现与检查
+
+生产组件完整重载后，在游戏服务端执行：
 
 ```python
 import mod.server.extraServerApi as serverApi
 api = serverApi.GetComponent(serverApi.GetLevelId(), "radium", "transfer")
-assert api is not None
-assert api.API_VERSION >= (1, 1, 0)
-_result = api.run_self_tests()
+assert api.API_VERSION == (1, 3, 0)
+result = api.run_self_tests()
+assert result["ok"] and result["total"] == 166
 ```
 
-预期 `ok=True`、`failed={}`，passed 数量等于 total。自测创建隔离的内存服务和模拟方块查询，不注册实际方块、不改变真实机器、不写世界数据。
+开发脚本位于devtools：isolated_tests.py隔离载入工作区源码；native_validation.py、native_failure_validation.py和hopper_validation.py验证原生行为；pipe_validation.py、tank_pipe_validation.py、pipe_extended_validation.py验证管道；persistence_validation.py分seed与verify_and_cleanup两阶段检查重进。异步报告done=True前不能重载或复用测试区。
 
-共 43 项自测。原 25 项涵盖事务、分配、共享身份、持久化、生命周期和守恒。新增 18 项覆盖：直接替换能源方向/限额、多层视图跟随限额、虚空视图提交后统计、组合/查询能源包装、仅公开协议的自定义能源端点、查询流体分槽身份、保留自定义流体批量路径、禁止外层扩大权限、属性身份规范化与深度脱离、不同属性拒绝混合、视图过滤提交重验、schema 2 数量与属性往返及原生字段类型、schema 1 float32 上溢恢复边界、大储量小变化、跨槽/跨目标累加、实际舍入返回值以及损坏快照拒绝。
+最终报告位于Git忽略的.cache：native_ordinary_full.json、native_double_validation.json、native_processing_validation.json、native_failure_validation.json、pipe_validation.json、tank_pipe_validation.json、pipe_double_validation.json、pipe_extended_validation.json、persistence_fixture.json。早期失败报告保留供诊断，以上最终报告为验收依据。
 
-## 真实游戏验收（必须另外执行）
+静态审查radium包37个文件：37可解析，0 fail、0 risk；3条warning为参数数量和重复测试收集器，6条hint包含参数数量及故障恢复异常收集。git diff --check通过。manifest、入口与API统一1.3.0，4个UUID唯一。完整重载后的实际生产组件自测166/166，faults=0。打包成功，共123个归档条目，含8个vanilla模块文件；字节码缓存、开发脚本、报告、Git/Studio数据均未进入包，addon.zip保持Git忽略。
 
-| 场景 | 验收标准 | 状态 |
-| --- | --- | --- |
-| 单独加载 radium | 无 SkyBlueTech 也能获取组件，无客户端脚本错误 | 待运行 |
-| 移除前置 | 使用方 GetComponent 返回 None，原有流程可正常启动 | 待运行 |
-| 两个不同模组注册 provider | 无需继承 SkyBlueTech；RF/流体按面互通 | 待运行 |
-| 普通方块、未加载区块 | query 返回 None，不创建机器或强加载区块 | 待运行 |
-| 控制器/IO 多别名 | 同一 Cell 不重复参与分配；无自转移增殖 | 待运行 |
-| 模式变更、拆机、区块卸载重载 | 旧 handle 被拒绝，重新 query 后恢复；无残留失效机器 | 待运行 |
-| 持久化 | 浮点流体、大于 2^31 的 RF、无限源保存重进后正确恢复 | 待运行 |
-| 原生 NBT 检查 | 无 long、inf、混合类型 list；槽位键为字符串 | 待运行 |
-| UI/统计 | 同一 owner 一次 changed；失败事务无通知，最终提交才统计 | 待运行 |
-| 保存异常 | 内存提交不重放，脏写下 tick 重试，可观察错误日志 | 待运行 |
-| 流体 schema 2 | 1000.2 mB 满罐、含大整数/小数/混合列表属性的身份退世界重进后完整恢复 | 待运行 |
-| 旧流体快照 | schema 1 满罐 float32 舍入上溢可恢复，真实超量拒绝，后续写 schema 2 | 待运行 |
-| 委托端口 | query/组合/自定义端点包装后保留拒收、限额、失效与回调；分槽无身份复制 | 待运行 |
-| 有限流体数值边界 | 2**54 mB 储量的小额操作不凭空转移；部分接收、累加失败无残留修改 | 待运行 |
+没有使用系统Python执行或编译代码，没有修改SkyBlueTech工作区，保留原有未提交改动。当前SkyBlueTech已提供可用的物品/流体radium接入。
 
-示例宿主适配代码在 examples/third_party_machine.py，需放入测试模组自己的脚本包并由其已验证的机器生命周期调用。该示例不是默认加载的机器定义，不会自动在生产世界里增加方块。
+## 尚未实测
 
-不要用系统 Python 执行自测或编译 .py。打包脚本仅处理文件，不属于运行模组代码。
+- 实际装有物品的原版收纳袋：当前背包没有可复制的真实样本，未猜造未知内容格式；普通userData和满潜影盒物品已验证。
+- 铜傀儡实际取放、玩家GUI同时点击、真实区块卸载的竞争：原生外部改槽、配对变化及假引擎卸载已测，不等同于上述实际行为。
+- 单独仅装radium、完全移除radium后的消费方启动、旧版FE/流体宿主存档迁移：原70项隔离回归通过，本次未更换当前游戏模组集合或使用其他宿主存档。
+
+上述项目不标记为通过。无法无损转换的新增模组物品会被拒绝，具体兼容性应使用真实样本追加验证。
 
 ## ToolDelta 服务端裁剪（2026-11-07）
 

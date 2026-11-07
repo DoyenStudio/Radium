@@ -1,5 +1,6 @@
 addon.zip
 __pycache__/
+.cache/
 *.pyc
 *.pyo
 .mcstudio/
