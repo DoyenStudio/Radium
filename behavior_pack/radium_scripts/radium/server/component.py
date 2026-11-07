@@ -24,4 +24,4 @@ class TransferComponent(ComponentBase, TransferService):
     def register_provider(self, capability, block_id, provider):
         TransferService.register_provider(self, capability, block_id, provider)
         # Native removal events need explicit registration for custom blocks.
-        BlockRemoveServerEvent.AddExtraBlocks(set((block_id,)))
+        BlockRemoveServerEvent.AddExtraBlocks((block_id,))

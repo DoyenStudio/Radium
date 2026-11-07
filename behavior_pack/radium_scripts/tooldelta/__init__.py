@@ -9,14 +9,3 @@ Email: 2528622340@qq.com
 
 Github-Contact-Me: SuperScript-PRC
 """
-
-from .internal import (
-    GetServer,
-    GetClient,
-    GetModName,
-)
-
-from . import (
-    define,
-    events,
-)

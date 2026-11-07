@@ -61,4 +61,4 @@ with api.open_transaction() as tx:
 
 1.1.0 的核心源码已完成静态解析与审查；游戏内回归用例已补充。项目代码未在系统 Python 上执行或编译。当前 MCDK 游戏端 `localhost:19133` 不可连接，因此 **游戏内自测、真实 NBT 保存重进与加载联动尚未运行**；具体步骤及构建检查记录见 [VALIDATION.md](docs/VALIDATION.md)。
 
-ToolDelta 来自工作区使用的 skybluetech/lite 分支，并独立打包在 `radium_scripts/tooldelta` 下，来源与本地命名空间调整见 [THIRD_PARTY.md](THIRD_PARTY.md)。
+radium 内置一份直接从 ToolDeltaMod `lite` 分支裁剪的服务端副本，只保留服务端常量和事件监听所需代码。上游版本和本地修改见 [THIRD_PARTY.md](THIRD_PARTY.md)。

@@ -49,3 +49,9 @@ _result = api.run_self_tests()
 示例宿主适配代码在 examples/third_party_machine.py，需放入测试模组自己的脚本包并由其已验证的机器生命周期调用。该示例不是默认加载的机器定义，不会自动在生产世界里增加方块。
 
 不要用系统 Python 执行自测或编译 .py。打包脚本仅处理文件，不属于运行模组代码。
+
+## ToolDelta 服务端裁剪（2026-11-07）
+
+本次使用包含 radium 1.3.0 开发改动的工作区验收。在游戏服务端 Python 2.7.13 重载行为包后，通过 `GetComponent(levelId, "radium", "transfer")` 取得生产组件，166 项自测全部通过。再次重载后，六个引擎事件仍各有一个监听器，模拟 tick 正常推进。客户端未注册 `radium.TDClient`，也未载入 ToolDelta 客户端模块。
+
+在空测试区放置并移除木桶，收到一次 `BlockRemoveServerEvent`，注册表代数增加 1，随后确认测试区已恢复。游戏内另用独立系统实例连续调用两次 `Destroy`，确认只执行一次收尾 tick 和失效处理，并清空 provider、释放组件引用。裁剪后的归档共 50 个文件，其中 ToolDelta 占 9 个，含来源与许可说明。

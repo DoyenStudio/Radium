@@ -2,15 +2,13 @@
 
 ## ToolDelta
 
-本库包含一份独立的 ToolDelta 脚本副本，来源为 SkyBlueTech 工作区当前采用的 ToolDeltaMod skybluetech 分支（基于 lite）：
+`behavior_pack/radium_scripts/tooldelta` 直接取自 ToolDeltaMod 的 `lite` 分支，基准提交为 [a0320212beefa4c3ba0a861d9a22eb22d45d7811](https://github.com/SuperScript-PRC/ToolDeltaMod/tree/a0320212beefa4c3ba0a861d9a22eb22d45d7811)。
 
-- 上游：https://github.com/SuperScript-PRC/ToolDeltaMod
-- 使用的镜像前缀：https://ghfast.top/
-- 工作区 gitlink：ee005eb319b74fb9a6b649a9af38ad830cbb7c73
-- 原位置：D:/addon/skybluetech/behavior_pack/skybluetech_scripts/tooldelta
-- 本地位置：behavior_pack/radium_scripts/tooldelta
+随包保留 `srv.py` 的 `CF` 和 `LEVEL_ID`、六个服务端事件的包装与监听，以及自定义方块移除事件的登记。radium 自行管理服务端系统和组件的生命周期。
 
-复制时不包含 .git、__pycache__。仅把 dropdown.py 中显式指向 skybluetech_scripts 的导入调整为 radium_scripts，使副本独立；SkyBlueTech 原副本没有被修改。当前工作区的许可说明保留在 LICENSE.workspace-source；ToolDelta 副本自身没有单独的 LICENSE 文件，因此该文件只记录工作区提供的许可，不擅自改变上游许可范围。
+上游 `BlockRemoveServerEvent.AddExtraBlocks` 将方块 ID 加入物品使用白名单。本地改为调用 `ListenOnBlockRemoveEvent`，让引擎为已登记方块发送移除事件。
+
+该上游提交未附独立的许可证文件。工作区提供的版权与许可声明见 [LICENSE.workspace-source](LICENSE.workspace-source)。
 
 ## 设计参考
 
