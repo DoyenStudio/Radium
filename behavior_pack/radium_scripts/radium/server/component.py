@@ -11,6 +11,14 @@ class TransferComponent(ComponentBase, TransferService):
     def __init__(self, entity_id):
         ComponentBase.__init__(self, entity_id)
         TransferService.__init__(self, self._is_loaded, self._block_name)
+        from radium_scripts.radium.vanilla.registry import VanillaRegistry
+        self.vanilla = VanillaRegistry(self, CF, LEVEL_ID)
+
+    def invalidate(self):
+        def invalidate_now():
+            self.vanilla.invalidate()
+            self.registry.invalidate()
+        self.manager.defer(invalidate_now)
 
     @staticmethod
     def _is_loaded(dimension, pos):

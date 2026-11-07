@@ -11,7 +11,7 @@ from . import transfer, views, snapshot, item_views, item_transfer, item_snapsho
 
 
 class TransferService(object):
-    API_VERSION = (1, 1, 0)
+    API_VERSION = (1, 3, 0)
     ENERGY = ENERGY
     FLUID = FLUID
     ITEM = ITEM
@@ -83,7 +83,22 @@ class TransferService(object):
     def run_self_tests(self):
         self.manager.assert_idle()
         from radium_scripts.radium.tests.self_test import run
-        return run()
+        from radium_scripts.radium.tests.item_test import run as run_items
+        from radium_scripts.radium.tests.native_transaction_test import run as run_native
+        from radium_scripts.radium.tests.quantized_test import run as run_quantized
+        from radium_scripts.radium.tests.cauldron_test import run as run_cauldron
+        from radium_scripts.radium.tests.native_item_codec_test import run as run_codec
+        from radium_scripts.radium.tests.vanilla_rules_test import run as run_rules
+        from radium_scripts.radium.tests.vanilla_backend_test import run as run_backend
+        result = run()
+        for runner in (run_items, run_native, run_quantized, run_cauldron, run_codec,
+                       run_rules, run_backend):
+            items = runner()
+            result["passed"].extend(items["passed"])
+            result["failed"].update(items["failed"])
+            result["total"] += items["total"]
+        result["ok"] = not result["failed"]
+        return result
 
     create_energy_handler = staticmethod(EnergyHandler)
     create_fluid_handler = staticmethod(FluidHandler)

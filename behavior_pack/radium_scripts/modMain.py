@@ -2,7 +2,7 @@
 from mod.common.mod import Mod
 
 
-@Mod.Binding(name="radium", version="1.1.0")
+@Mod.Binding(name="radium", version="1.3.0")
 class Radium(object):
     @Mod.InitServer()
     def init_server(self):
