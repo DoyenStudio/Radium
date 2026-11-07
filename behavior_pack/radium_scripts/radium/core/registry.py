@@ -43,11 +43,13 @@ class ProviderRegistry(object):
 
     def invalidate(self):
         # Global generation is intentional: no strong-reference block cache.
-        self.manager.assert_thread()
+        self.manager.defer(self._invalidate_now)
+
+    def _invalidate_now(self):
         self.generation += 1
 
     def query(self, capability, dimension, pos, face=None):
-        self.manager.assert_thread()
+        self.manager.assert_access()
         if capability not in (ENERGY, FLUID):
             raise ValueError("Unsupported capability")
         pos = tuple(pos)
@@ -95,7 +97,7 @@ class GuardedHandler(object):
         return self.handler.storage_ids
 
     def check(self, tx=None):
-        self.manager.assert_thread()
+        self.manager.assert_access()
         if tx is not None:
             tx.guard(self.valid)
         elif not self.valid():

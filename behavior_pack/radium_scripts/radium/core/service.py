@@ -1,5 +1,5 @@
 # coding=utf-8
-from .transaction import TransactionManager, TransactionError, Cell
+from .transaction import TransactionManager, TransactionError, RecoveryError, Cell
 from .energy import EnergyStorage, EnergyHandler, CombinedEnergyHandler, VoidingEnergyHandler
 from .fluid import FluidStorage, FluidHandler
 from .registry import ProviderRegistry, ENERGY, FLUID
@@ -12,6 +12,7 @@ class TransferService(object):
     ENERGY = ENERGY
     FLUID = FLUID
     TransactionError = TransactionError
+    RecoveryError = RecoveryError
 
     def __init__(self, is_loaded, block_name, report=None):
         self.manager = TransactionManager(report)
