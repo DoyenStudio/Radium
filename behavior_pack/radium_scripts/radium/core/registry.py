@@ -123,6 +123,15 @@ class GuardedEnergy(GuardedHandler):
 
 
 class GuardedFluid(GuardedHandler):
+    def extraction_candidates(self, resource, amount, tx, slots=None):
+        self.check(tx)
+        method = getattr(self.handler, "extraction_candidates", None)
+        if method is None:
+            return None
+        if not callable(method):
+            raise TransactionError("Extraction candidates must be callable")
+        return method(resource, amount, tx, slots)
+
     def get_storage_ids(self, slots=None):
         self.check()
         method = getattr(self.handler, "get_storage_ids", None)

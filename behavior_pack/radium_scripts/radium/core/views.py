@@ -141,23 +141,27 @@ class FluidView(EndpointView):
         fluid_id = normalize_fluid(fluid_id)
         amount = fluid_amount(amount)
         self._check(tx)
-        selected = self.input_slots if inserting else self.output_slots
-        if slot is not None and slot not in selected:
+        selected = tuple(self.input_slots if inserting else self.output_slots)
+        visible = tuple(self.slots)
+        if slot is not None and (slot not in selected or slot not in visible):
             return 0.0
-        bulk = self.bulk_insert if inserting else self.bulk_extract
+        bulk = ((self.bulk_insert if inserting else self.bulk_extract)
+                and selected == visible and visible == tuple(self.handler.get_slots()))
         operation = self.handler.insert if inserting else self.handler.extract
+        tx.guard(lambda: tuple(self.slots) == visible and tuple(
+            self.input_slots if inserting else self.output_slots) == selected)
         if slot is None and bulk and (not inserting or self.accepts is None):
             tx.guard(lambda: (self.bulk_insert if inserting else self.bulk_extract)
-                     and (self.input_slots if inserting else self.output_slots) == selected
+                     and tuple(self.handler.get_slots()) == visible
                      and (not inserting or self.accepts is None))
             return operation(fluid_id, amount, tx)
         total = 0.0
         for index in selected if slot is None else (slot,):
-            if inserting and not self.is_valid(index, fluid_id):
+            if index not in visible or (inserting and not self.is_valid(index, fluid_id)):
                 continue
             # Discard delegate state/effects too if the sum cannot be represented.
             with tx.manager.open(tx) as attempt:
-                attempt.guard(lambda i=index: i in (
+                attempt.guard(lambda i=index: i in self.slots and i in (
                     self.input_slots if inserting else self.output_slots))
                 if inserting:
                     attempt.guard(lambda i=index: self.is_valid(i, fluid_id))
@@ -178,6 +182,30 @@ class FluidView(EndpointView):
 
     def extract(self, fluid_id, amount, tx, slot=None):
         return self._transfer(fluid_id, amount, tx, slot, False)
+
+    def extraction_candidates(self, resource, amount, tx, slots=None):
+        self._check(tx)
+        resource = normalize_fluid(resource)
+        amount = fluid_amount(amount)
+        method = getattr(self.handler, "extraction_candidates", None)
+        if method is None:
+            return None
+        if not callable(method):
+            raise TransactionError("Extraction candidates must be callable")
+        outputs = tuple(self.output_slots)
+        visible = tuple(self.slots)
+        requested = None if slots is None else tuple(slots)
+        selected = tuple(s for s in outputs if s in visible and
+                         (requested is None or s in requested))
+        if not selected:
+            return ()
+        tx.guard(lambda: tuple(self.output_slots) == outputs and tuple(self.slots) == visible)
+        # Unrestricted views retain the delegate's bulk extraction semantics.
+        bulk = (self.bulk_extract and slots is None and outputs == visible
+                and visible == tuple(self.handler.get_slots()))
+        if bulk:
+            tx.guard(lambda: self.bulk_extract and tuple(self.handler.get_slots()) == visible)
+        return method(resource, amount, tx, None if bulk else selected)
 
 
 def energy_view(handler, can_insert=True, can_extract=True, valid=None,
