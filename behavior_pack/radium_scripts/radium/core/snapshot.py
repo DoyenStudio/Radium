@@ -10,7 +10,7 @@ FLUID_SCHEMA = 2
 
 
 def save_energy(handler):
-    # Arbitrary runtime RF integers are encoded as little-endian int32 limbs.
+    # Arbitrary runtime FE integers are encoded as little-endian int32 limbs.
     amount = energy_amount(handler.get_amount())
     limbs = []
     while amount:

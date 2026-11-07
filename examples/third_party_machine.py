@@ -52,7 +52,7 @@ class ExampleMachine(object):
         self.needs_client_sync = True
 
     def try_process(self):
-        # Example recipe: 100 RF + 250 mB water -> 250 mB product.
+        # Example recipe: 100 FE + 250 mB water -> 250 mB product.
         with self.api.open_transaction() as tx:
             if self.energy.extract(100, tx) != 100:
                 return False

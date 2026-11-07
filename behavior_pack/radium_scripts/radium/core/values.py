@@ -15,12 +15,12 @@ INFINITY = float("inf")
 
 def energy_amount(value):
     if isinstance(value, bool) or not isinstance(value, integer_types + (float,)):
-        raise TypeError("RF must be a non-negative integer")
+        raise TypeError("FE must be a non-negative integer")
     if isinstance(value, float):
         if math.isnan(value) or math.isinf(value) or value != int(value):
-            raise ValueError("Fractional or non-finite RF is not supported")
+            raise ValueError("Fractional or non-finite FE is not supported")
     if value < 0:
-        raise ValueError("RF must be non-negative")
+        raise ValueError("FE must be non-negative")
     return int(value)
 
 
@@ -74,5 +74,5 @@ def resource_id(value):
 def nbt_int(value):
     value = energy_amount(value)
     if value > 2147483647:
-        raise OverflowError("RF scalar does not fit signed int32 NBT")
+        raise OverflowError("FE scalar does not fit signed int32 NBT")
     return int(value)
