@@ -1,0 +1,14 @@
+{
+    "format_version": "0.0.1",
+    "name": "radium",
+    "description": "查看 radium API 版本或管理当前世界的功能",
+    "permission_level": "game_directors",
+    "args": [
+        {"name": "version", "type": "enum", "options": ["version"]}
+    ],
+    "args1": [
+        {"name": "function", "type": "enum", "options": ["function"]},
+        {"name": "action", "type": "enum", "options": ["enable", "disable"]},
+        {"name": "function_name", "type": "enum", "options": ["cauldron_interact"]}
+    ]
+}

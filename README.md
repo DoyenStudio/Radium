@@ -24,6 +24,18 @@ elif api.API_VERSION[0] == 1:
 
 使用方不需要导入 `radium_scripts`，不调用 `CreateComponent`，不声明强制 manifest 依赖。请在所有附加包脚本加载结束后获取，或首次业务调用时惰性获取；不要把早期的 `None` 永久缓存。客户端没有资源写入组件。
 
+## 游戏指令
+
+操作员和命令方块可以使用以下指令。功能开关按世界保存。
+
+| 指令 | 效果 |
+| --- | --- |
+| `/radium version` | 显示当前组件的 API 版本号 |
+| `/radium function enable cauldron_interact` | 为普通炼药锅和熔岩炼药锅启用流体端口 |
+| `/radium function disable cauldron_interact` | 关闭内置炼药锅流体端口，已有端口句柄失效 |
+
+`cauldron_interact` 默认关闭，已有世界首次升级时也需要显式启用。
+
 ## 已提供
 
 - 物品 ID、aux 与完整附加数据组成的不可变身份，数量独立；支持原生物品字典往返及附魔 tuple。
@@ -36,7 +48,7 @@ elif api.API_VERSION[0] == 1:
 - `move_item`、`move_energy`、`move_fluid` 及按调用方给定顺序分配的 `distribute_*`；识别共享 Cell，避免同一控制器的别名端口重复参与。
 - 按能力、方块 ID、维度、坐标和目标绝对面查询；只查询已加载区块，不创建机器。
 - 默认注册原版容器 provider：普通箱、陷阱箱、铜箱八种变体、木桶、潜影盒、漏斗、发射器、投掷器，以及按面存取的三类炉和酿造台；双箱两半共享库存身份。
-- 炼药锅提供容量 1000mB 的流体端口，水按原版六级水位量化，熔岩只接受整桶存取；量化转移会协商双方能共同接受的数量。
+- 启用 `cauldron_interact` 后，炼药锅提供容量 1000mB 的流体端口，水按原版六级水位量化，熔岩只接受整桶存取。
 - 原生容器采用提交前复核、同步写入回读与失败补偿；不能确认恢复时以 `RecoveryError` 隔离相关库存，禁止自动重放。
 - 原生 NBT 安全快照：FE 大整数分解为 int32 数组，流体 schema 2 用 hex 字符串保留完整浮点数量和属性，兼容读取 schema 1，永不写入 `long` 或 `inf`。
 - 仅游戏解释器运行的独立内存自测，不访问或改变真实机器。
@@ -45,7 +57,7 @@ elif api.API_VERSION[0] == 1:
 
 ## 原版容器（vanilla）
 
-安装后即可用 `query(api.ITEM, dimension, pos, face)` 查询受支持的原版库存，用 `query(api.FLUID, dimension, pos, face)` 查询炼药锅；无需使用方额外注册或导入脚本。内置 provider 遵循现有注册冲突规则，不允许另一回调静默覆盖。
+安装后即可用 `query(api.ITEM, dimension, pos, face)` 查询受支持的原版库存。启用炼药锅功能后，可用 `query(api.FLUID, dimension, pos, face)` 查询炼药锅。内置 provider 遵循现有注册冲突规则。
 
 水位 0～6 对应 `0/167/333/500/667/833/1000 mB`，每次返回完整水位差。熔岩一次至少需要 1000mB 的来源、目标空间和传输预算；不足一档或一桶返回 0，不跨调用积累预算。末影箱、未展开战利品的容器，以及装有药水、染色水、细雪等不支持内容的锅不开放端口。
 

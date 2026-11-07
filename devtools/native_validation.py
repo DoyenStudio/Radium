@@ -54,6 +54,7 @@ class Fixture(object):
             report=self.reports.append)
         registry_module = sys.modules[PREFIX + ".vanilla.registry"]
         self.registry = registry_module.VanillaRegistry(self.api, factory, level_id)
+        self.registry.set_cauldron_interact(True)
         self.codec = sys.modules[PREFIX + ".vanilla.item_codec"]
         self.rules = sys.modules[PREFIX + ".vanilla.rules"]
         self.engine = self.registry.engine

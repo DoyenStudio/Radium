@@ -43,7 +43,7 @@ import mod.server.extraServerApi as serverApi
 api = serverApi.GetComponent(serverApi.GetLevelId(), "radium", "transfer")
 assert api.API_VERSION == (1, 3, 0)
 result = api.run_self_tests()
-assert result["ok"] and result["total"] == 166
+assert result["ok"] and result["total"] == 168
 ```
 
 开发脚本位于 `devtools/`。`isolated_tests.py` 隔离载入工作区源码。`native_validation.py`、`native_failure_validation.py` 和 `hopper_validation.py` 验证原生容器、失败恢复和漏斗行为。`persistence_validation.py` 在保存前执行 `seed`，重进后执行 `verify_and_cleanup`。异步报告标记 `done=True` 后才可重载或复用测试区。
@@ -65,3 +65,9 @@ Git 忽略的 `.cache/` 目录保存了本次验收使用的报告，包括 `nat
 本次使用包含 radium 1.3.0 开发改动的工作区验收。在游戏服务端 Python 2.7.13 重载行为包后，通过 `GetComponent(levelId, "radium", "transfer")` 取得生产组件，166 项自测全部通过。再次重载后，六个引擎事件仍各有一个监听器，模拟 tick 正常推进。客户端未注册 `radium.TDClient`，也未载入 ToolDelta 客户端模块。
 
 在空测试区放置并移除木桶，收到一次 `BlockRemoveServerEvent`，注册表代数增加 1，随后确认测试区已恢复。游戏内另用独立系统实例连续调用两次 `Destroy`，确认只执行一次收尾 tick 和失效处理，并清空 provider、释放组件引用。裁剪后的归档共 50 个文件，其中 ToolDelta 占 9 个，含来源与许可说明。
+
+## 炼药锅功能开关（2026-11-07）
+
+游戏服务端 Python 2.7.13 的工作区隔离测试和生产组件自测均通过 168/168 项。游戏内执行版本查询、启用和禁用指令均成功，未知功能名被拒绝。启用后完整重载仍能查询到装有 500 mB 水的炼药锅。禁用后同一位置查询返回 `None`，旧句柄抛出 `TransactionError`，重新启用后水量仍为 500 mB。验收结束后已关闭功能并清除测试方块。
+
+运行使用生产组件的流体管道验收脚本前，先执行 `/radium function enable cauldron_interact`。独立原生容器验收脚本会在自己的测试注册表中启用炼药锅。

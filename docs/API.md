@@ -237,7 +237,7 @@ query 先 CheckChunkState，再 GetBlockNew 取 name，再选择 provider。无�
 
 ## 原版容器适配（自 1.3.0 起）
 
-服务端组件启动时自动注册 vanilla provider。运输模组通过 `query(api.ITEM, dimension, pos, face)` 查询物品容器，通过 `query(api.FLUID, dimension, pos, face)` 查询炼药锅，不需要导入 `radium_scripts` 或再次注册。内置注册仍遵守 `(capability, block_id)` 唯一性：第三方用不同回调注册同一键会抛 `ValueError`，不会覆盖内置 provider；同一方块的其他能力不受影响。独立内存 `TransferService` 测试实例不自动连接游戏或注册原版容器。
+服务端组件启动时自动注册原版物品容器，通过 `query(api.ITEM, dimension, pos, face)` 查询。炼药锅的内置流体 provider 默认关闭。操作员使用 `/radium function enable cauldron_interact` 启用后，可通过 `query(api.FLUID, dimension, pos, face)` 查询。使用 `/radium function disable cauldron_interact` 关闭后，旧句柄失效，需要重新查询。开关按世界保存，运输模组可通过 `get_provider_revision(api.FLUID)` 检测变化。如果第三方已为其中一种炼药锅注册了流体 provider，启用指令会报告冲突并保留第三方注册。独立内存 `TransferService` 测试实例不自动连接游戏或注册原版容器。
 
 ### 支持范围与面规则
 

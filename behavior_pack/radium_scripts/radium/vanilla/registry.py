@@ -14,10 +14,31 @@ class VanillaRegistry(object):
         self.owners = {}
         self.blocked = set()
         self.reported = set()
+        self.cauldron_interact = False
         for name in sorted(rules.ITEM_BLOCKS):
             service.register_provider(service.ITEM, name, self.item_provider)
-        for name in sorted(rules.CAULDRONS):
-            service.register_provider(service.FLUID, name, self.fluid_provider)
+
+    def set_cauldron_interact(self, enabled):
+        service = self.service
+        service.manager.assert_idle()
+        if enabled == self.cauldron_interact:
+            return
+        if enabled:
+            try:
+                for name in sorted(rules.CAULDRONS):
+                    service.register_provider(service.FLUID, name, self.fluid_provider)
+            except Exception:
+                # Undo only our registrations if either block ID is unavailable.
+                for name in rules.CAULDRONS:
+                    service.unregister_provider(service.FLUID, name, self.fluid_provider)
+                raise
+        else:
+            for name in rules.CAULDRONS:
+                service.unregister_provider(service.FLUID, name, self.fluid_provider)
+            for (capability, dimension, positions), owner in self.owners.items():
+                if capability == service.FLUID:
+                    owner.alive = False
+        self.cauldron_interact = enabled
 
     def invalidate(self):
         for owner in self.owners.values():

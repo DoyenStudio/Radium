@@ -377,11 +377,49 @@ def test_native_change_before_commit_is_detected_without_setter_calls():
     assert port.get_amount(0) == 3 and not world.slot_writes and not world.nbt_writes
 
 
+def test_cauldron_interact_controls_both_providers_and_invalidates_old_handles():
+    world = FakeWorld()
+    pos = world.add_cauldron(3)
+    lava = world.add_cauldron(6, "lava", (1, 4, 0))
+    world.blocks[(0, lava)]["name"] = "minecraft:lava_cauldron"
+    api, registry, reports = setup(world)
+    revision = api.get_provider_revision(api.FLUID)
+    assert all(api.query(api.FLUID, 0, p) is None for p in (pos, lava))
+    registry.set_cauldron_interact(True)
+    ports = [api.query(api.FLUID, 0, p) for p in (pos, lava)]
+    assert [port.get_amount(0) for port in ports] == [500, 1000]
+    enabled_revision = api.get_provider_revision(api.FLUID)
+    assert enabled_revision > revision
+    registry.set_cauldron_interact(True)
+    assert api.get_provider_revision(api.FLUID) == enabled_revision
+    registry.set_cauldron_interact(False)
+    assert api.get_provider_revision(api.FLUID) > enabled_revision
+    assert all(api.query(api.FLUID, 0, p) is None for p in (pos, lava))
+    registry.set_cauldron_interact(True)
+    for port in ports:
+        expect(TransactionError, port.get_slots)
+    assert not world.state_writes
+
+
+def test_cauldron_interact_conflict_preserves_external_provider():
+    world = FakeWorld()
+    api, registry, reports = setup(world)
+    provider = lambda dimension, pos, face: None
+    api.register_provider(api.FLUID, "minecraft:lava_cauldron", provider)
+    expect(ValueError, lambda: registry.set_cauldron_interact(True))
+    assert not registry.cauldron_interact
+    assert (api.FLUID, "minecraft:cauldron") not in api.registry.providers
+    assert api.unregister_provider(api.FLUID, "minecraft:lava_cauldron", provider)
+    registry.set_cauldron_interact(True)
+    assert registry.cauldron_interact
+
+
 def test_cauldron_owner_quantizes_abort_and_commit_without_replacing_nbt():
     world = FakeWorld()
     pos = world.add_cauldron(0)
     original_nbt = deepcopy(world.entities[(0, pos)])
     api, registry, reports = setup(world)
+    registry.set_cauldron_interact(True)
     top = api.query(api.FLUID, 0, pos, 1)
     side = api.query(api.FLUID, 0, pos, 3)
     assert top.get_storage_ids() == side.get_storage_ids()
@@ -407,6 +445,7 @@ def test_cauldron_failed_state_write_restores_the_exact_previous_state():
     pos = world.add_cauldron(6)
     before = deepcopy(world.states)
     api, registry, reports = setup(world)
+    registry.set_cauldron_interact(True)
     port = api.query(api.FLUID, 0, pos, 0)
     world.state_modes = ["false_after"]
     with api.open_transaction() as tx:
