@@ -13,6 +13,7 @@ class ProviderRegistry(object):
         self.is_loaded = is_loaded
         self.block_name = block_name
         self.providers = {}
+        self.provider_revisions = {}
         self.generation = 0
 
     def register(self, capability, block_id, provider):
@@ -26,13 +27,16 @@ class ProviderRegistry(object):
         previous = self.providers.get(key)
         if previous is not None and previous != provider:
             raise ValueError("A different provider is already registered for %r" % (key,))
-        self.providers[key] = provider
+        if previous is None:
+            self.providers[key] = provider
+            self.provider_revisions[capability] = self.provider_revisions.get(capability, 0) + 1
 
     def unregister(self, capability, block_id, provider):
         self.manager.assert_idle()
         key = (capability, block_id)
         if self.providers.get(key) == provider:
             del self.providers[key]
+            self.provider_revisions[capability] += 1
             self.invalidate()
             return True
         return False

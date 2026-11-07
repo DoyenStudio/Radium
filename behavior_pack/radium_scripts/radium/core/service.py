@@ -46,6 +46,10 @@ class TransferService(object):
     def register_provider(self, capability, block_id, provider):
         return self.registry.register(capability, block_id, provider)
 
+    def get_provider_revision(self, capability):
+        """Changes only when the set of providers for this capability changes."""
+        return self.registry.provider_revisions.get(capability, 0)
+
     def unregister_provider(self, capability, block_id, provider):
         return self.registry.unregister(capability, block_id, provider)
 

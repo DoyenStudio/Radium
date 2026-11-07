@@ -199,7 +199,7 @@ handler = api.query(api.ENERGY, dimension, (x, y, z), face)
 api.unregister_provider(api.ENERGY, "example:machine", provider)
 ```
 
-`query(capability, dimension, pos, face=None)` 接受整数维度和三个整数方块坐标。`register_provider` 和 `unregister_provider` 均应在事务外调用。注册成功返回 `None`；同一能力和方块 ID 重复注册同一回调有效，换用其他回调会抛出 `ValueError`。注销时传入原回调，匹配并移除后返回 `True`，未匹配返回 `False`。
+`query(capability, dimension, pos, face=None)` 接受整数维度和三个整数方块坐标。`register_provider` 和 `unregister_provider` 均应在事务外调用。支持 `get_provider_revision(capability)` 的版本可用该值检测相应能力的注册表变化，以补查已经铺设的线缆。重复登记同一回调不改变版本。注册成功返回 `None`；同一能力和方块 ID 重复注册同一回调有效，换用其他回调会抛出 `ValueError`。注销时传入原回调，匹配并移除后返回 `True`，未匹配返回 `False`。
 
 `provider(dimension, pos_tuple, face)` 只查宿主的已加载机器表，返回属于当前组件的 handler 或 `None`。区块加载、机器构造、存档读写和资源修改均应在 provider 外完成。
 
