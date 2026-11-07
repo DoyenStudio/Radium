@@ -13,3 +13,5 @@
 ## 设计参考
 
 参考 D:/addon/jemods 中 NeoForge 26.3.x 的能力 provider、资源 handler 和事务思想（浅克隆 commit 3bb720446f9290c23eaf493a467a3eaaa93efe1b）。本库为网易 Python 2.7 环境重新实现，没有复制 NeoForge Java 源码，也不提供 Java 二进制或 API 兼容性。
+
+1.2.0 物品能力进一步参考用户指定的 D:/gitclone/jemods/neoforge（同一 commit）的 `transfer/item/ItemResource.java`、`ItemStacksResourceHandler.java`、`transfer/ResourceHandler.java`、`StacksResourceHandler.java` 与 `ResourceHandlerUtil.java`：物品身份与数量分离、按身份计算容量、事务内槽位存取，以及显式优先合堆。上游版权为 NeoForged and contributors，SPDX `LGPL-2.1-only`。本次仍为独立 Python 实现，未复制或翻译 Java 源码。原生物品字典字段和附魔 tuple 格式曾参照当时随包附带的 [ToolDelta 物品定义](https://github.com/SuperScript-PRC/ToolDeltaMod/blob/ee005eb319b74fb9a6b649a9af38ad830cbb7c73/define/item.py)。

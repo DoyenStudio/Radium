@@ -2,15 +2,19 @@
 from .transaction import TransactionManager, TransactionError, RecoveryError, Cell
 from .energy import EnergyStorage, EnergyHandler, CombinedEnergyHandler, VoidingEnergyHandler
 from .fluid import FluidStorage, FluidHandler
-from .registry import ProviderRegistry, ENERGY, FLUID
+from .item import ItemStorage, ItemHandler
+from .registry import ProviderRegistry, ENERGY, FLUID, ITEM
 from .resource import fluid_resource, get_fluid_id, get_fluid_properties
-from . import transfer, views, snapshot
+from .item_resource import (item_resource, item_resource_from_stack, item_stack,
+                            get_item_id, get_item_aux, get_item_properties)
+from . import transfer, views, snapshot, item_views, item_transfer, item_snapshot
 
 
 class TransferService(object):
     API_VERSION = (1, 1, 0)
     ENERGY = ENERGY
     FLUID = FLUID
+    ITEM = ITEM
     TransactionError = TransactionError
     RecoveryError = RecoveryError
 
@@ -43,6 +47,15 @@ class TransferService(object):
     def create_voiding_energy(self, on_insert=None, valid=None):
         self.manager.assert_idle()
         return VoidingEnergyHandler(self.manager, on_insert, valid)
+
+    def create_item_storage(self, capacities, stack_limit, saved=None, **kwargs):
+        self.manager.assert_idle()
+        storage = ItemStorage(self.manager, capacities, stack_limit, **kwargs)
+        if saved is not None:
+            states = item_snapshot.read_items(saved, storage)
+            for slot, state in states.items():
+                storage.cells[slot].state = state
+        return storage
 
     def register_provider(self, capability, block_id, provider):
         return self.registry.register(capability, block_id, provider)
@@ -86,3 +99,15 @@ class TransferService(object):
     fluid_resource = staticmethod(fluid_resource)
     get_fluid_id = staticmethod(get_fluid_id)
     get_fluid_properties = staticmethod(get_fluid_properties)
+    create_item_handler = staticmethod(ItemHandler)
+    item_view = staticmethod(item_views.item_view)
+    move_item = staticmethod(item_transfer.move_item)
+    distribute_item = staticmethod(item_transfer.distribute_item)
+    insert_item_stacking = staticmethod(item_transfer.insert_item_stacking)
+    save_item = staticmethod(item_snapshot.save_item)
+    item_resource = staticmethod(item_resource)
+    item_resource_from_stack = staticmethod(item_resource_from_stack)
+    item_stack = staticmethod(item_stack)
+    get_item_id = staticmethod(get_item_id)
+    get_item_aux = staticmethod(get_item_aux)
+    get_item_properties = staticmethod(get_item_properties)

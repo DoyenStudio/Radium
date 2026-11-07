@@ -1,9 +1,11 @@
 # coding=utf-8
 from .transaction import TransactionError
 from .values import integer_types, resource_id
+from .item_resource import normalize_item
 
 ENERGY = "radium:energy"
 FLUID = "radium:fluid"
+ITEM = "radium:item"
 
 
 class ProviderRegistry(object):
@@ -18,7 +20,7 @@ class ProviderRegistry(object):
 
     def register(self, capability, block_id, provider):
         self.manager.assert_idle()
-        if capability not in (ENERGY, FLUID):
+        if capability not in (ENERGY, FLUID, ITEM):
             raise ValueError("Unsupported capability")
         resource_id(block_id)
         if not callable(provider):
@@ -50,7 +52,7 @@ class ProviderRegistry(object):
 
     def query(self, capability, dimension, pos, face=None):
         self.manager.assert_access()
-        if capability not in (ENERGY, FLUID):
+        if capability not in (ENERGY, FLUID, ITEM):
             raise ValueError("Unsupported capability")
         pos = tuple(pos)
         if (len(pos) != 3 or any(isinstance(v, bool) or not isinstance(v, integer_types)
@@ -79,7 +81,7 @@ class ProviderRegistry(object):
                     self.is_loaded(dimension, pos) and
                     self.block_name(dimension, pos) == name)
 
-        cls = GuardedEnergy if capability == ENERGY else GuardedFluid
+        cls = {ENERGY: GuardedEnergy, FLUID: GuardedFluid, ITEM: GuardedItem}[capability]
         return cls(handler, valid)
 
 
@@ -164,3 +166,48 @@ class GuardedFluid(GuardedHandler):
     def extract(self, fluid_id, amount, tx, slot=None):
         self.check(tx)
         return self.handler.extract(fluid_id, amount, tx, slot)
+
+
+class GuardedItem(GuardedHandler):
+    def normalize_resource(self, resource):
+        self.check()
+        resource = normalize_item(resource)
+        method = getattr(self.handler, "normalize_resource", None)
+        if method is None:
+            return resource
+        if not callable(method):
+            raise TransactionError("Item resource normalization must be callable")
+        return normalize_item(method(resource))
+
+    def get_storage_ids(self, slots=None):
+        self.check()
+        method = getattr(self.handler, "get_storage_ids", None)
+        return method(slots) if method is not None else self.handler.storage_ids
+
+    def get_slots(self):
+        self.check()
+        return self.handler.get_slots()
+
+    def get_resource(self, slot, tx=None):
+        self.check(tx)
+        return self.handler.get_resource(slot, tx)
+
+    def get_amount(self, slot, tx=None):
+        self.check(tx)
+        return self.handler.get_amount(slot, tx)
+
+    def get_capacity(self, slot, resource=None):
+        self.check()
+        return self.handler.get_capacity(slot, resource)
+
+    def is_valid(self, slot, resource):
+        self.check()
+        return self.handler.is_valid(slot, resource)
+
+    def insert(self, resource, amount, tx, slot=None):
+        self.check(tx)
+        return self.handler.insert(resource, amount, tx, slot)
+
+    def extract(self, resource, amount, tx, slot=None):
+        self.check(tx)
+        return self.handler.extract(resource, amount, tx, slot)
