@@ -1,5 +1,5 @@
 # coding=utf-8
-"""Real SkyBlueTech pipe classes and world blocks; GAME interpreter only."""
+"""Run this integration fixture in-game with the external pipe addon loaded."""
 import traceback
 from weakref import WeakValueDictionary
 import mod.server.extraServerApi as serverApi
@@ -73,7 +73,6 @@ class Fixture(object):
         return API.query(API.FLUID if self.fluid else API.ITEM, 0, pos, None)
 
     def tick(self):
-        # This is the exact callback used by SkyBlueTech's normal five-tick scheduler.
         self.module.onNetworkTick(self.network)
 
     def cleanup(self):

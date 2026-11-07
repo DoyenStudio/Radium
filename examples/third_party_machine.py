@@ -12,7 +12,7 @@ def get_transfer_api():
 
 
 class ExampleMachine(object):
-    """No SkyBlueTech base class. Host supplies its existing BlockEntityData object."""
+    """Store machine resources in the BlockEntityData supplied by the host."""
     def __init__(self, api, bdata):
         self.api = api
         self.bdata = bdata

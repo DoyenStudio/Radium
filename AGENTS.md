@@ -1,6 +1,6 @@
 # radium development
 
-- Independent optional NetEase Minecraft addon. Never modify the SkyBlueTech workspace as part of library-only work.
+- radium is an optional NetEase Minecraft library. Consumer addons implement their own integrations through the public API. Keep library-only changes in this workspace.
 - Public discovery is serverApi.GetComponent(levelId, "radium", "transfer"). Do not require consumers to import radium scripts or declare a mandatory dependency.
 - Python 2.7.13 compatible. Execute tests only in the game's interpreter. Do not run project code or compile .py files with system Python.
 - Native Mod APIs and events must be verified from existing source or minecraft_mod_assistant documentation. Use the bundled radium_scripts.tooldelta event wrappers.

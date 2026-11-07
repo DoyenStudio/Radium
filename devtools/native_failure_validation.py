@@ -1,8 +1,8 @@
 # coding=utf-8
 """Inject a return failure AFTER a real native write, then verify compensation.
 
-Only the isolated validation engine is wrapped; global Minecraft/SBT APIs are
-never replaced. Run in the game's interpreter, using the empty fixture region.
+Run in the game's interpreter using the isolated validation engine and the
+empty fixture region.
 """
 import types
 

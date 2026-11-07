@@ -11,17 +11,11 @@
 | 真实双箱 | 80/80 | 普通/陷阱/八种铜箱，四方向、两种放置顺序；全部54槽，两半相同槽序与身份 |
 | 真实加工容器、锅、物品数据 | 64/64 | 炉三类及燃烧变体6项、酿造台1项、水位组合49项、熔岩1项、物品数据7项 |
 | 真实失败与生命周期 | 8/8 | 写入实际发生后返回失败，普通箱、桶、铜双箱、炉、酿造台和锅恢复；外部原生改槽冲突；合箱/拆箱拒绝旧事务 |
-| SkyBlueTech 管道回调 | 29/29 | 普通容器、三类炉各面和空桶、酿造台各面、水/熔岩；跟踪确认调用radium搬运接口 |
-| SkyBlueTech 储罐互通 | 4/4 | 真实青铜储罐与锅，水/熔岩双向；原版端经过radium，储罐端用SBT机器逻辑 |
-| SkyBlueTech 双箱管网 | 2/2 | 普通/铜双箱两半各接同一U形管网，正反各3次回调，54槽不变，radium返回0 |
-| SkyBlueTech 自动调度 | 5/5 | 钢物品管、水300/500mB往返、熔岩300/500mB预算；实际OnSimTick每5tick驱动，未手调回调 |
 | 保存重进 | 12个方块快照一致 | 普通箱、打蜡铜双箱两半、水667mB、熔岩1000mB及支撑/雨棚；完整引擎重载前后NBT、库存快照、配对和状态一致 |
 
-真实容器检查合计176项，另有8项真实失败/生命周期检查；管道检查合计40项。独立测试空区为维度0 `x=-24..-17, y=99..102, z=10..16`，每次先核验已加载且为空气，结束清除测试物品、管网实例和方块，再核验恢复。没有改动玩家背包或已有机器。
+真实容器检查合计 176 项，另有 8 项失败与生命周期检查。测试使用维度 0 的独立空区 `x=-24..-17, y=99..102, z=10..16`。每次先确认测试位置已加载且为空气，结束后清除测试物品和方块，并检查场地已恢复。
 
 保存重进样本包含名称、附魔、剩余耐久和extraId的钻石剑；内含27槽、每槽64个石头的潜影盒物品；铜双箱54槽不同数量的物品；普通水与熔岩。物品数据组另验证userData和收纳袋自定义标记。**收纳袋标记往返不等于实际填充收纳袋的内容验收。**
-
-熔岩在原始300/500mB管网预算下正反均为0移动。只把测试网络实例的transfer_speed临时提高到1000，完成整桶往返后恢复。自动调度报告记录间隔5的SBT tick序号及radium调用；水的166/167mB档位差和500mB转移均守恒。
 
 ## 引擎实测与修正
 
@@ -52,13 +46,11 @@ result = api.run_self_tests()
 assert result["ok"] and result["total"] == 166
 ```
 
-开发脚本位于devtools：isolated_tests.py隔离载入工作区源码；native_validation.py、native_failure_validation.py和hopper_validation.py验证原生行为；pipe_validation.py、tank_pipe_validation.py、pipe_extended_validation.py验证管道；persistence_validation.py分seed与verify_and_cleanup两阶段检查重进。异步报告done=True前不能重载或复用测试区。
+开发脚本位于 `devtools/`。`isolated_tests.py` 隔离载入工作区源码。`native_validation.py`、`native_failure_validation.py` 和 `hopper_validation.py` 验证原生容器、失败恢复和漏斗行为。`persistence_validation.py` 在保存前执行 `seed`，重进后执行 `verify_and_cleanup`。异步报告标记 `done=True` 后才可重载或复用测试区。
 
-最终报告位于Git忽略的.cache：native_ordinary_full.json、native_double_validation.json、native_processing_validation.json、native_failure_validation.json、pipe_validation.json、tank_pipe_validation.json、pipe_double_validation.json、pipe_extended_validation.json、persistence_fixture.json。早期失败报告保留供诊断，以上最终报告为验收依据。
+Git 忽略的 `.cache/` 目录保存了本次验收使用的报告，包括 `native_ordinary_full.json`、`native_double_validation.json`、`native_processing_validation.json`、`native_failure_validation.json` 和 `persistence_fixture.json`。早期失败报告保留供诊断。
 
 静态审查radium包37个文件：37可解析，0 fail、0 risk；3条warning为参数数量和重复测试收集器，6条hint包含参数数量及故障恢复异常收集。git diff --check通过。manifest、入口与API统一1.3.0，4个UUID唯一。完整重载后的实际生产组件自测166/166，faults=0。打包成功，共123个归档条目，含8个vanilla模块文件；字节码缓存、开发脚本、报告、Git/Studio数据均未进入包，addon.zip保持Git忽略。
-
-没有使用系统Python执行或编译代码，没有修改SkyBlueTech工作区，保留原有未提交改动。当前SkyBlueTech已提供可用的物品/流体radium接入。
 
 ## 尚未实测
 

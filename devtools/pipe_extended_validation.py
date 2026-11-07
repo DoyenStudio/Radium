@@ -1,10 +1,10 @@
 # coding=utf-8
-"""Real SBT scheduler and paired-container checks; GAME Python 2.7.13 only.
+"""Run paired-container and scheduling checks with the external pipe addon in-game.
 
 run_sync() exercises the actual callback synchronously for paired chests.
-run_async() observes enabled networks through SBT's normal OnSimTick scheduler;
-it never invokes a network tick itself. Poll the report until done=True before
-reloading the world or using the shared test area for another fixture.
+run_async() observes enabled networks during normal game ticks.
+Wait for done=True in the report before reloading the world or reusing the
+shared test area.
 """
 import json
 import os

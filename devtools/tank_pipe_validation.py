@@ -1,5 +1,5 @@
 # coding=utf-8
-"""Real SkyBlueTech tank/pipe and native cauldron acceptance; game only."""
+"""Exercise transfers between the external pipe addon's tank and a cauldron in-game."""
 import traceback
 
 
